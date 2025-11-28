@@ -1,8 +1,8 @@
-import { QueryClient,VueQueryPlugin } from '@tanstack/vue-query'
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { type ComponentPublicInstance,createApp } from 'vue'
 
-import { mockNotifications,mockUsers } from '@/api/mock-data'
+import { mockNotifications, mockUsers } from '@/api/mock-data'
 import {
   useDashboardCalendar,
   useDashboardNotifications,

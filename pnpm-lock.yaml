@@ -99,6 +99,9 @@ importers:
       esbuild:
         specifier: ^0.27.0
         version: 0.27.0
+      eslint:
+        specifier: ^9.13.0
+        version: 9.39.1(jiti@2.6.1)
       eslint-plugin-simple-import-sort:
         specifier: ^12.1.1
         version: 12.1.1(eslint@9.39.1(jiti@2.6.1))

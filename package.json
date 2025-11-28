@@ -49,6 +49,7 @@
     "@testing-library/vue": "^8.1.0",
     "@types/mockjs": "^1.0.10",
     "@types/node": "^24.10.1",
+    "eslint": "^9.13.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vitest/coverage-v8": "^4.0.14",
     "@vitest/ui": "^4.0.14",
