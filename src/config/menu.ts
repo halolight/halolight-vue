@@ -1,5 +1,3 @@
-import type { Component } from 'vue'
-
 import {
   BarChart3,
   CalendarCheck,
@@ -10,6 +8,7 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-vue-next'
+import type { Component } from 'vue'
 
 export interface NavItem {
   title: string

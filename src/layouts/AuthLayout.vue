@@ -1,7 +1,9 @@
+<script setup lang="ts">
+import AuthShell from '@/components/auth/AuthShell.vue'
+</script>
+
 <template>
-  <div class="auth-shell">
-    <div class="auth-panel">
-      <RouterView />
-    </div>
-  </div>
+  <AuthShell right-padding-class="p-3 sm:p-4 lg:px-10 lg:py-6">
+    <RouterView />
+  </AuthShell>
 </template>

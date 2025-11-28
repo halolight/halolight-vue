@@ -2,15 +2,23 @@
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
+import TdkManager from '@/components/common/TdkManager.vue'
 import { useLayoutStore } from '@/stores/layout'
+import { useUiSettingsStore } from '@/stores/ui-settings'
 
 const layout = useLayoutStore()
+const uiSettings = useUiSettingsStore()
 
 onMounted(() => {
-  layout.applyTheme()
+  layout.initTheme()
+  uiSettings.init()
 })
 </script>
 
 <template>
+  <!-- TDK 管理器 -->
+  <TdkManager />
+
+  <!-- 路由视图 -->
   <RouterView />
 </template>

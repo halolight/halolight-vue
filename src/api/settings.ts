@@ -1,6 +1,6 @@
-import api from './client'
-
 import type { SettingsPayload, SettingsState } from '@/types/settings'
+
+import api from './client'
 
 export const fetchSettings = async (): Promise<SettingsState> => api.get('/settings')
 

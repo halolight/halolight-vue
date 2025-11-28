@@ -1,107 +1,134 @@
 <script setup lang="ts">
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { Check, Loader2, Save } from 'lucide-vue-next'
+import { Check, Monitor, Moon, RotateCcw, Sun } from 'lucide-vue-next'
 
-import { fetchSettings, updateSettings } from '@/api/settings'
-import { useLayoutStore } from '@/stores/layout'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
+import { type SkinPreset, useUiSettingsStore } from '@/stores/ui-settings'
 
-const queryClient = useQueryClient()
-const layout = useLayoutStore()
+const uiSettings = useUiSettingsStore()
 
-const { data, isLoading } = useQuery({
-  queryKey: ['settings'],
-  queryFn: fetchSettings,
-})
+const themeOptions = [
+  { value: 'light' as const, label: '浅色', icon: Sun },
+  { value: 'dark' as const, label: '深色', icon: Moon },
+  { value: 'system' as const, label: '系统', icon: Monitor },
+]
 
-const mutation = useMutation({
-  mutationFn: updateSettings,
-  onSuccess: (next) => {
-    queryClient.setQueryData(['settings'], next)
-    layout.showFooter = next.showFooter
-    layout.theme = next.theme === 'system' ? layout.theme : (next.theme as 'light' | 'dark')
-  },
-})
+const skinPresets: Array<{ id: SkinPreset; name: string; colors: string[] }> = [
+  { id: 'default', name: 'Neutral', colors: ['#0f172a', '#6366f1', '#14b8a6'] },
+  { id: 'blue', name: 'Blue', colors: ['#1d4ed8', '#0ea5e9', '#a855f7'] },
+  { id: 'emerald', name: 'Emerald', colors: ['#047857', '#10b981', '#22c55e'] },
+  { id: 'amber', name: 'Amber', colors: ['#f59e0b', '#f97316', '#fb7185'] },
+  { id: 'violet', name: 'Violet', colors: ['#7c3aed', '#8b5cf6', '#06b6d4'] },
+  { id: 'rose', name: 'Rose', colors: ['#e11d48', '#f43f5e', '#fb923c'] },
+]
 
-const handleToggle = (key: 'showFooter' | 'enableTabBar') => {
-  mutation.mutate({ [key]: !(data?.value?.[key] ?? false) })
-}
-
-const handleTheme = (theme: 'light' | 'dark' | 'system') => {
-  mutation.mutate({ theme })
-}
-
-const handleNav = (navigation: 'side' | 'top') => {
-  mutation.mutate({ navigation })
+function handleThemeChange(theme: 'light' | 'dark' | 'system', event?: MouseEvent) {
+  uiSettings.setThemeWithTransition(theme, event)
 }
 </script>
 
 <template>
-  <div class="page-header">
-    <div>
-      <div class="page-eyebrow">Settings</div>
-      <h1 class="page-title" style="margin: 0">系统设置</h1>
-      <p class="muted">Mock.js 返回 /api/settings，支持简单更新以模拟后端存储。</p>
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">系统设置</h1>
+        <p class="text-muted-foreground mt-1">管理应用外观和行为</p>
+      </div>
+      <Button variant="outline" size="sm" @click="uiSettings.resetSettings()">
+        <RotateCcw class="h-4 w-4 mr-2" />
+        重置
+      </Button>
     </div>
-    <div class="page-actions">
-      <button class="btn primary" :disabled="!!mutation.isPending">
-        <Save :size="16" /> 自动保存
-      </button>
+
+    <!-- 主题 + 皮肤 -->
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- 主题 -->
+      <Card>
+        <CardHeader class="pb-3">
+          <CardTitle class="text-base">主题模式</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="opt in themeOptions"
+              :key="opt.value"
+              :class="cn(
+                'flex flex-col items-center gap-1.5 rounded-lg border-2 p-3 transition-colors hover:bg-muted/50',
+                uiSettings.theme === opt.value ? 'border-primary bg-primary/5' : 'border-muted'
+              )"
+              @click="(e) => handleThemeChange(opt.value, e)"
+            >
+              <component :is="opt.icon" class="h-5 w-5" />
+              <span class="text-xs">{{ opt.label }}</span>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- 皮肤 -->
+      <Card>
+        <CardHeader class="pb-3">
+          <CardTitle class="text-base">配色皮肤</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="skin in skinPresets"
+              :key="skin.id"
+              :class="cn(
+                'relative rounded-lg border-2 p-2 transition hover:bg-muted/50',
+                uiSettings.skin === skin.id ? 'border-primary' : 'border-muted'
+              )"
+              @click="uiSettings.setSkin(skin.id)"
+            >
+              <div class="flex gap-1 mb-1.5">
+                <span
+                  v-for="c in skin.colors"
+                  :key="c"
+                  class="h-4 w-4 rounded-sm"
+                  :style="{ backgroundColor: c }"
+                />
+              </div>
+              <span class="text-xs">{{ skin.name }}</span>
+              <Check v-if="uiSettings.skin === skin.id" class="absolute top-1 right-1 h-3 w-3 text-primary" />
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
+
+    <!-- 界面选项 -->
+    <Card>
+      <CardHeader class="pb-3">
+        <CardTitle class="text-base">界面选项</CardTitle>
+        <CardDescription>切换立即生效</CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm">显示页脚</span>
+          <Switch :checked="uiSettings.showFooter" @update:checked="uiSettings.setShowFooter" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm">多标签导航</span>
+          <Switch :checked="uiSettings.showTabBar" @update:checked="uiSettings.setShowTabBar" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">移动端固定头部</span>
+          <Switch :checked="uiSettings.mobileHeaderFixed" @update:checked="uiSettings.setMobileHeaderFixed" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">移动端固定标签栏</span>
+          <Switch :checked="uiSettings.mobileTabBarFixed" @update:checked="uiSettings.setMobileTabBarFixed" />
+        </div>
+      </CardContent>
+    </Card>
   </div>
-
-  <section class="card section" style="padding: 18px">
-    <header class="section-header">
-      <div class="pill section-title">外观与导航</div>
-      <span class="section-meta">{{ isLoading ? '加载中...' : 'Mock 数据' }}</span>
-    </header>
-
-    <div class="list">
-      <div class="list-item">
-        <div>
-          <div style="font-weight: 700">主题</div>
-          <div class="muted">light / dark / system</div>
-        </div>
-        <div style="display: flex; gap: 8px">
-          <button class="btn" @click="() => handleTheme('light')">Light</button>
-          <button class="btn" @click="() => handleTheme('dark')">Dark</button>
-          <button class="btn" @click="() => handleTheme('system')">System</button>
-        </div>
-      </div>
-
-      <div class="list-item">
-        <div>
-          <div style="font-weight: 700">导航布局</div>
-          <div class="muted">侧边或顶部导航</div>
-        </div>
-        <div style="display: flex; gap: 8px">
-          <button class="btn" @click="() => handleNav('side')">Side</button>
-          <button class="btn" @click="() => handleNav('top')">Top</button>
-        </div>
-      </div>
-
-      <div class="list-item">
-        <div>
-          <div style="font-weight: 700">显示页脚</div>
-          <div class="muted">footer 展示开关</div>
-        </div>
-        <button class="btn" @click="() => handleToggle('showFooter')">
-          <Check :size="14" /> {{ data?.showFooter ? '已开启' : '已关闭' }}
-        </button>
-      </div>
-
-      <div class="list-item">
-        <div>
-          <div style="font-weight: 700">Tab Bar</div>
-          <div class="muted">多标签导航开关</div>
-        </div>
-        <button class="btn" @click="() => handleToggle('enableTabBar')">
-          <Check :size="14" /> {{ data?.enableTabBar ? '已开启' : '已关闭' }}
-        </button>
-      </div>
-    </div>
-
-    <div v-if="mutation.isPending" class="muted" style="display: inline-flex; align-items: center; gap: 6px">
-      <Loader2 class="spin" :size="14" /> 保存中...
-    </div>
-  </section>
 </template>

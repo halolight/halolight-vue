@@ -1,20 +1,29 @@
-import { createPinia } from 'pinia'
-import { createApp } from 'vue'
-import { VueQueryPlugin } from '@tanstack/vue-query'
-
-import App from './App.vue'
-import queryClient from './plugins/query-client'
-import router from './router'
-import { setupMock } from './mock'
 import '@/assets/main.css'
 
-if (import.meta.env.VITE_USE_MOCK === 'true') {
+import { VueQueryPlugin } from '@tanstack/vue-query'
+import { createPinia } from 'pinia'
+import piniaPersistedstate from 'pinia-plugin-persistedstate'
+import { createApp } from 'vue'
+
+import App from './App.vue'
+import { config } from './config'
+import { setupMockFetch } from './lib/mock-fetch'
+import { setupMock } from './mock'
+import queryClient from './plugins/query-client'
+import router from './router'
+
+// 初始化 Mock（仅在开发环境且开启 mock 时）
+if (config.mock && config.isDev) {
   setupMock()
+  setupMockFetch()
 }
 
 const app = createApp(App)
 
-app.use(createPinia())
+const pinia = createPinia()
+pinia.use(piniaPersistedstate)
+
+app.use(pinia)
 app.use(router)
 app.use(VueQueryPlugin, { queryClient })
 
