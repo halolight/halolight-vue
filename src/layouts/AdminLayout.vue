@@ -2,6 +2,7 @@
 import { useLayoutStore } from '@/stores/layout'
 import AppHeader from '@/components/common/AppHeader.vue'
 import AppSidebar from '@/components/common/AppSidebar.vue'
+import AppFooter from '@/components/common/AppFooter.vue'
 
 const layout = useLayoutStore()
 </script>
@@ -14,6 +15,7 @@ const layout = useLayoutStore()
       <main class="page-area">
         <RouterView />
       </main>
+      <AppFooter />
     </div>
   </div>
 </template>

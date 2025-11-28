@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { Check, Loader2, Save } from 'lucide-vue-next'
 
 import { fetchSettings, updateSettings } from '@/api/settings'
+import { useLayoutStore } from '@/stores/layout'
 
 const queryClient = useQueryClient()
+const layout = useLayoutStore()
 
 const { data, isLoading } = useQuery({
   queryKey: ['settings'],
@@ -15,6 +17,8 @@ const mutation = useMutation({
   mutationFn: updateSettings,
   onSuccess: (next) => {
     queryClient.setQueryData(['settings'], next)
+    layout.showFooter = next.showFooter
+    layout.theme = next.theme === 'system' ? layout.theme : (next.theme as 'light' | 'dark')
   },
 })
 

@@ -83,11 +83,14 @@ const nextActions = [
       </div>
       <div class="stat-value">{{ card.value }}</div>
       <div class="muted">{{ card.highlight }}</div>
+      <div class="progress-bar">
+        <span class="progress-fill" />
+      </div>
     </article>
   </section>
 
   <section class="grid two-col" style="margin-top: 14px">
-    <article class="card">
+    <article class="card section">
       <header class="stat-top" style="margin-bottom: 8px">
         <div class="pill" style="gap: 6px; display: inline-flex; align-items: center">
           <MonitorSmartphone :size="16" /> 实时概览
@@ -119,12 +122,12 @@ const nextActions = [
       </div>
     </article>
 
-    <article class="card">
-      <header class="stat-top" style="margin-bottom: 6px">
-        <div class="pill" style="gap: 6px; display: inline-flex; align-items: center">
+    <article class="card section">
+      <header class="section-header">
+        <div class="pill section-title">
           <Flame :size="16" /> 最新动态
         </div>
-        <span class="muted">自动同步自 Vue Query</span>
+        <span class="section-meta">自动同步自 Vue Query</span>
       </header>
 
       <div class="list">
@@ -140,12 +143,12 @@ const nextActions = [
   </section>
 
   <section class="grid two-col" style="margin-top: 14px">
-    <article class="card">
-      <header class="stat-top" style="margin-bottom: 6px">
-        <div class="pill" style="gap: 6px; display: inline-flex; align-items: center">
+    <article class="card section">
+      <header class="section-header">
+        <div class="pill section-title">
           <ShieldCheck :size="16" /> 当前项目
         </div>
-        <span class="muted">与 Next.js 版进度保持一致</span>
+        <span class="section-meta">与 Next.js 版进度保持一致</span>
       </header>
       <div class="list">
         <div v-for="project in projects" :key="project.name" class="list-item">
@@ -161,12 +164,12 @@ const nextActions = [
       </div>
     </article>
 
-    <article class="card quick-actions">
-      <header class="stat-top" style="margin-bottom: 8px">
-        <div class="pill" style="gap: 6px; display: inline-flex; align-items: center">
+    <article class="card quick-actions section">
+      <header class="section-header">
+        <div class="pill section-title">
           <Zap :size="16" /> 下一步
         </div>
-        <span class="muted">迁移路线图</span>
+        <span class="section-meta">迁移路线图</span>
       </header>
       <div class="list">
         <div v-for="action in nextActions" :key="action.title" class="list-item">

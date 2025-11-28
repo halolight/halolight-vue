@@ -31,7 +31,7 @@ const handleSubmit = async () => {
 <template>
   <div class="card auth-panel">
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px">
-      <div class="user-avatar">HL</div>
+      <div class="brand-mark">HL</div>
       <div>
         <div class="muted" style="text-transform: uppercase; letter-spacing: 0.8px">Halolight Vue</div>
         <h2 style="margin: 4px 0 0">后台管理登录</h2>

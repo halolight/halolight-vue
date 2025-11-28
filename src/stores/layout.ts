@@ -18,6 +18,7 @@ export const useLayoutStore = defineStore('layout', {
   state: () => ({
     sidebarCollapsed: false,
     theme: getPreferredTheme() as Theme,
+    showFooter: true,
   }),
   actions: {
     toggleSidebar() {
