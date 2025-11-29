@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 
 import AppFooter from '@/components/common/AppFooter.vue'
 import AppHeader from '@/components/common/AppHeader.vue'
@@ -21,7 +20,6 @@ useProvideCommandMenu()
 const layout = useLayoutStore()
 const uiSettings = useUiSettingsStore()
 const tabsStore = useTabsStore()
-const route = useRoute()
 
 // 响应式侧边栏宽度：移动端为 0，桌面端根据折叠状态
 const sidebarWidth = computed(() => (layout.sidebarCollapsed ? 64 : 180))
@@ -82,9 +80,11 @@ onMounted(() => {
           mobileContentPadding
         )"
       >
-        <RouterView v-slot="{ Component }">
-          <Transition name="page" mode="out-in">
-            <component :is="Component" :key="route.path" />
+        <RouterView v-slot="{ Component, route: currentRoute }">
+          <Transition name="page" mode="out-in" appear>
+            <div :key="currentRoute.path">
+              <component :is="Component" />
+            </div>
           </Transition>
         </RouterView>
       </main>
@@ -113,5 +113,34 @@ onMounted(() => {
   div[style*="--sidebar-width"] {
     margin-left: 0 !important;
   }
+}
+
+/* 页面切换过渡动画 */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 展开/收起过渡 */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
+  max-height: 0;
 }
 </style>

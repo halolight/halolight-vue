@@ -1,12 +1,12 @@
 <script setup lang="tsx">
 import { ChevronDown, ChevronLeft } from 'lucide-vue-next'
 import type { PropType } from 'vue'
-import { computed, defineComponent, ref, Transition } from 'vue'
+import { computed, defineComponent, onUnmounted, ref, Transition, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { primaryNav, secondaryNav } from '@/config/menu'
 import { cn } from '@/lib/utils'
 import { useLayoutStore } from '@/stores/layout'
@@ -28,6 +28,12 @@ interface Props {
   forceExpanded?: boolean
 }
 
+interface HoverPreview {
+  key: string
+  rect: DOMRect
+  items: NavItem[]
+}
+
 const props = withDefaults(defineProps<Props>(), {
   expandedWidth: 180,
   collapsedWidth: 64,
@@ -40,6 +46,10 @@ const router = useRouter()
 const layout = useLayoutStore()
 const navigation = useNavigationStore()
 const openGroups = ref<Set<string>>(new Set())
+
+// 收起状态下的悬浮预览
+const hoverPreview = ref<HoverPreview | null>(null)
+let hoverCloseTimer: ReturnType<typeof setTimeout> | null = null
 
 // 如果 forceExpanded 为 true，始终显示展开状态
 const collapsed = computed(() => props.forceExpanded ? false : layout.sidebarCollapsed)
@@ -75,12 +85,116 @@ function handleNavigate(href: string | undefined, label: string) {
   navigation.startNavigation({ path: href, label, source: 'sidebar' })
   router.push(href)
   layout.closeMobileSidebar()
+  // 关闭悬浮预览
+  hoverPreview.value = null
 }
 
 function toggleSidebar() {
   layout.toggleSidebar()
 }
 
+// 悬浮预览相关函数
+function clearHoverTimer() {
+  if (hoverCloseTimer) {
+    clearTimeout(hoverCloseTimer)
+    hoverCloseTimer = null
+  }
+}
+
+function handleHoverItem(item: NavItem, target: HTMLElement | null) {
+  if (!collapsed.value || !item.children?.length || !target) return
+  clearHoverTimer()
+  const rect = target.getBoundingClientRect()
+  hoverPreview.value = { key: item.to ?? item.title, rect, items: item.children }
+}
+
+function scheduleHoverClose() {
+  if (!collapsed.value) return
+  clearHoverTimer()
+  hoverCloseTimer = setTimeout(() => {
+    hoverPreview.value = null
+  }, 120)
+}
+
+function cancelHoverClose() {
+  clearHoverTimer()
+}
+
+// 计算弹出菜单位置
+const flyoutStyle = computed(() => {
+  if (!hoverPreview.value) return {}
+  const { rect } = hoverPreview.value
+  const gap = 8
+  const top = rect.top
+  const left = rect.right + gap
+  return {
+    top: `${top}px`,
+    left: `${left}px`,
+    maxHeight: '75vh',
+  }
+})
+
+// 收起时清除悬浮预览
+watch(collapsed, (val) => {
+  if (!val) {
+    hoverPreview.value = null
+    clearHoverTimer()
+  }
+})
+
+onUnmounted(() => {
+  clearHoverTimer()
+})
+
+// 弹出菜单子项组件
+const FlyoutItem = defineComponent({
+  name: 'FlyoutItem',
+  props: {
+    item: { type: Object as PropType<NavItem>, required: true },
+    activePath: { type: String, required: true },
+    depth: { type: Number, default: 0 },
+  },
+  emits: ['navigate'],
+  setup(props, { emit }) {
+    const active = computed(() => isActive(props.item, props.activePath))
+    const hasChildren = computed(() => (props.item.children?.length ?? 0) > 0)
+    const Icon = props.item.icon
+
+    return () => (
+      <div class="space-y-0.5">
+        <button
+          type="button"
+          onClick={() => emit('navigate', props.item.to, props.item.title)}
+          class={cn(
+            'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-left transition-colors',
+            'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+            active.value
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-sidebar-foreground/80'
+          )}
+        >
+          {Icon && <Icon class="h-4 w-4 shrink-0" />}
+          <span class="truncate">{props.item.title}</span>
+        </button>
+        {hasChildren.value && (
+          <div class="ml-4 border-l border-border/50 pl-3">
+            {props.item.children?.map((child) => (
+              <FlyoutItem
+                key={child.to ?? child.title}
+                item={child}
+                activePath={props.activePath}
+                depth={props.depth + 1}
+                onNavigate={(href: string, label: string) => emit('navigate', href, label)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  },
+})
+
+// 菜单项组件
 const MenuItem = defineComponent({
   name: 'MenuItem',
   props: {
@@ -90,7 +204,7 @@ const MenuItem = defineComponent({
     activePath: { type: String, required: true },
     openGroups: { type: Object as PropType<Set<string>>, required: true },
   },
-  emits: ['navigate', 'toggle'],
+  emits: ['navigate', 'toggle', 'hoverItem', 'hoverEnd'],
   setup(props, { emit }) {
     const hasChildren = computed(() => (props.item.children?.length ?? 0) > 0)
     const key = computed(() => props.item.to ?? props.item.title)
@@ -104,12 +218,6 @@ const MenuItem = defineComponent({
       paddingLeft: `${12 + props.level * 12}px`,
     }))
 
-    const childContainerClass = computed(() =>
-      props.collapsed
-        ? 'absolute left-full top-0 z-50 w-48 rounded-lg border border-border bg-sidebar p-2 shadow-lg space-y-1'
-        : 'mt-1 space-y-1 border-l border-border/60 pl-2'
-    )
-
     function onToggle() {
       emit('toggle', key.value)
     }
@@ -118,16 +226,40 @@ const MenuItem = defineComponent({
       emit('navigate', props.item.to, props.item.title)
     }
 
-    function handleHover(open: boolean) {
-      if (!props.collapsed || !hasChildren.value) return
-      emit('toggle', key.value, open)
-    }
+    const linkContent = () => (
+      <RouterLink
+        to={props.item.to ?? '#'}
+        class={cn(
+          'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+          'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+          active.value ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70'
+        )}
+        style={paddingStyle.value}
+        onClick={(e: Event) => {
+          e.preventDefault()
+          onNavigate()
+        }}
+      >
+        {props.item.icon && <props.item.icon class="h-5 w-5 shrink-0" />}
+        <Transition name="fade-width">
+          {!props.collapsed && <span class="truncate">{props.item.title}</span>}
+        </Transition>
+        {props.item.badge && !props.collapsed && (
+          <span class="ml-auto rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
+            {props.item.badge}
+          </span>
+        )}
+        {active.value && (
+          <div class="absolute left-0 h-8 w-1 rounded-r-full bg-primary" />
+        )}
+      </RouterLink>
+    )
 
     return () => (
       <div
         class="space-y-1 relative"
-        onMouseenter={() => handleHover(true)}
-        onMouseleave={() => handleHover(false)}
+        onMouseenter={(e) => emit('hoverItem', props.item, e.currentTarget)}
+        onMouseleave={() => emit('hoverEnd')}
       >
         {hasChildren.value ? (
           <div class="flex flex-col">
@@ -160,53 +292,42 @@ const MenuItem = defineComponent({
                 </>
               )}
             </button>
-            <Transition name="fade-width">
-              <div
-                v-show={isOpen.value}
-                class={childContainerClass.value}
-              >
-                {props.item.children?.map((child) => (
-                  <MenuItem
-                    key={(child.to ?? child.title) as string}
-                    item={child}
-                    level={props.level + 1}
-                    collapsed={props.collapsed}
-                    activePath={props.activePath}
-                    openGroups={props.openGroups}
-                    onNavigate={(href: string, label: string) => emit('navigate', href, label)}
-                    onToggle={(val: string) => emit('toggle', val)}
-                  />
-                ))}
-              </div>
-            </Transition>
+            {/* 展开状态下的子菜单 */}
+            {!props.collapsed && (
+              <Transition name="fade-width">
+                <div
+                  v-show={isOpen.value}
+                  class="mt-1 space-y-1 border-l border-border/60 pl-2"
+                >
+                  {props.item.children?.map((child) => (
+                    <MenuItem
+                      key={(child.to ?? child.title) as string}
+                      item={child}
+                      level={props.level + 1}
+                      collapsed={props.collapsed}
+                      activePath={props.activePath}
+                      openGroups={props.openGroups}
+                      onNavigate={(href: string, label: string) => emit('navigate', href, label)}
+                      onToggle={(val: string) => emit('toggle', val)}
+                      onHoverItem={(item: NavItem, target: HTMLElement) => emit('hoverItem', item, target)}
+                      onHoverEnd={() => emit('hoverEnd')}
+                    />
+                  ))}
+                </div>
+              </Transition>
+            )}
           </div>
+        ) : props.collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div class="relative">{linkContent()}</div>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={10}>
+              {props.item.title}
+            </TooltipContent>
+          </Tooltip>
         ) : (
-          <RouterLink
-            to={props.item.to ?? '#'}
-            class={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-              'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-              active.value ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70'
-            )}
-            style={paddingStyle.value}
-            onClick={(e: Event) => {
-              e.preventDefault()
-              onNavigate()
-            }}
-          >
-            {props.item.icon && <props.item.icon class="h-5 w-5 shrink-0" />}
-            <Transition name="fade-width">
-              {!props.collapsed && <span class="truncate">{props.item.title}</span>}
-            </Transition>
-            {props.item.badge && !props.collapsed && (
-              <span class="ml-auto rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                {props.item.badge}
-              </span>
-            )}
-            {active.value && (
-              <div class="absolute left-0 h-8 w-1 rounded-r-full bg-primary" />
-            )}
-          </RouterLink>
+          linkContent()
         )}
       </div>
     )
@@ -251,6 +372,8 @@ const MenuItem = defineComponent({
             :open-groups="openGroups"
             @navigate="handleNavigate"
             @toggle="toggleGroup"
+            @hover-item="handleHoverItem"
+            @hover-end="scheduleHoverClose"
           />
         </nav>
       </ScrollArea>
@@ -275,6 +398,27 @@ const MenuItem = defineComponent({
         </Button>
       </div>
     </aside>
+
+    <!-- 收起状态下的悬浮弹出菜单 - 在侧边栏外部统一渲染 -->
+    <Teleport to="body">
+      <Transition name="flyout">
+        <div
+          v-if="collapsed && hoverPreview"
+          class="fixed z-50 w-64 overflow-auto rounded-xl border bg-popover shadow-xl p-2"
+          :style="flyoutStyle"
+          @mouseenter="cancelHoverClose"
+          @mouseleave="scheduleHoverClose"
+        >
+          <FlyoutItem
+            v-for="item in hoverPreview.items"
+            :key="item.to || item.title"
+            :item="item"
+            :active-path="activePath"
+            @navigate="handleNavigate"
+          />
+        </div>
+      </Transition>
+    </Teleport>
   </TooltipProvider>
 </template>
 
@@ -304,5 +448,16 @@ const MenuItem = defineComponent({
 .fade-width-enter-active,
 .fade-width-leave-active {
   transform-origin: top;
+}
+
+.flyout-enter-active,
+.flyout-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.flyout-enter-from,
+.flyout-leave-to {
+  opacity: 0;
+  transform: translateX(-6px);
 }
 </style>

@@ -20,8 +20,52 @@ const socialLinks = [
 
 <template>
   <footer class="border-t border-border/50 bg-background/80 backdrop-blur-sm">
-    <div class="mx-auto max-w-screen-2xl px-4 py-4 sm:px-6">
-      <div class="flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
+    <div class="mx-auto max-w-screen-2xl px-4 py-3 sm:px-6 sm:py-4">
+      <!-- 移动端：紧凑两行布局 -->
+      <div class="flex flex-col gap-2 text-xs text-muted-foreground sm:hidden">
+        <div class="flex items-center justify-between">
+          <span>© {{ currentYear }} {{ projectInfo.name }}</span>
+          <div class="flex items-center gap-1.5">
+            <a
+              v-for="link in socialLinks"
+              :key="link.href"
+              :href="link.href"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-primary"
+              :title="link.label"
+            >
+              <component :is="link.icon" class="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1">
+            <span>Made with</span>
+            <Heart class="h-3 w-3 text-red-500 fill-red-500" />
+            <span>by</span>
+            <a
+              :href="`https://github.com/${projectInfo.author}`"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-primary"
+            >
+              {{ projectInfo.author }}
+            </a>
+          </div>
+          <div class="flex items-center gap-2">
+            <RouterLink to="/privacy" class="hover:text-primary transition-colors">
+              隐私
+            </RouterLink>
+            <RouterLink to="/terms" class="hover:text-primary transition-colors">
+              条款
+            </RouterLink>
+          </div>
+        </div>
+      </div>
+
+      <!-- 桌面端：一行布局 -->
+      <div class="hidden sm:flex flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
         <!-- Copyright -->
         <span>© {{ currentYear }} {{ projectInfo.name }}</span>
 

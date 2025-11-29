@@ -10,6 +10,7 @@ import {
   Home,
   LayoutDashboard,
   LineChart,
+  Lock,
   MessageSquare,
   RefreshCw,
   Settings,
@@ -34,9 +35,11 @@ import { useNavigationStore } from '@/stores/navigation'
 import { type Tab,useTabsStore } from '@/stores/tabs'
 import { useUiSettingsStore } from '@/stores/ui-settings'
 
-// 路径到标题的映射
+// 路径到标题的映射（更具体的路径优先匹配）
 const pathTitles: Record<string, string> = {
   '/': '首页',
+  '/users/demo/profile': '资料页',
+  '/users/demo/security': '安全页',
   '/users': '用户管理',
   '/accounts': '账号与权限',
   '/analytics': '数据分析',
@@ -51,9 +54,11 @@ const pathTitles: Record<string, string> = {
   '/security': '安全审计',
 }
 
-// 路径到图标的映射
+// 路径到图标的映射（更具体的路径优先）
 const pathIcons: Record<string, typeof Home> = {
   '/': LayoutDashboard,
+  '/users/demo/profile': User,
+  '/users/demo/security': Lock,
   '/users': Users,
   '/accounts': ShieldCheck,
   '/analytics': LineChart,
@@ -69,17 +74,25 @@ const pathIcons: Record<string, typeof Home> = {
 }
 
 function resolveTitle(path: string): string {
-  const match = Object.entries(pathTitles).find(
-    ([key]) => path === key || path.startsWith(`${key}/`)
-  )
-  return match ? match[1] : path.split('/').pop() || '新页面'
+  // 先精确匹配
+  if (pathTitles[path]) {
+    return pathTitles[path]
+  }
+  // 再尝试前缀匹配（从长到短）
+  const sortedKeys = Object.keys(pathTitles).sort((a, b) => b.length - a.length)
+  const match = sortedKeys.find((key) => path.startsWith(`${key}/`))
+  return (match && pathTitles[match]) || path.split('/').pop() || '新页面'
 }
 
 function resolveIcon(path: string) {
-  const match = Object.entries(pathIcons).find(
-    ([key]) => path === key || path.startsWith(`${key}/`)
-  )
-  return match ? match[1] : Home
+  // 先精确匹配
+  if (pathIcons[path]) {
+    return pathIcons[path]
+  }
+  // 再尝试前缀匹配（从长到短）
+  const sortedKeys = Object.keys(pathIcons).sort((a, b) => b.length - a.length)
+  const match = sortedKeys.find((key) => path.startsWith(`${key}/`))
+  return match ? pathIcons[match] : Home
 }
 
 const router = useRouter()

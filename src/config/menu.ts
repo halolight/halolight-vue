@@ -3,9 +3,11 @@ import {
   CalendarCheck,
   FileText,
   LayoutDashboard,
+  Lock,
   MessagesSquare,
   Settings,
   ShieldCheck,
+  User,
   UserCog,
   Users,
 } from 'lucide-vue-next'
@@ -25,14 +27,13 @@ export const primaryNav: NavItem[] = [
     title: '用户中心',
     icon: Users,
     children: [
-      { title: '用户管理', to: '/users', icon: Users, badge: '列表' },
+      { title: '用户管理', to: '/users', icon: Users },
       {
-        title: '用户详情示例',
+        title: '用户详情',
         icon: UserCog,
-        badge: '三级',
         children: [
-          { title: '资料页', to: '/users/demo/profile' },
-          { title: '安全页', to: '/users/demo/security' },
+          { title: '资料页', to: '/users/demo/profile', icon: User },
+          { title: '安全页', to: '/users/demo/security', icon: Lock },
         ],
       },
     ],

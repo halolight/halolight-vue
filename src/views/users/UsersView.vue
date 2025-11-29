@@ -12,7 +12,7 @@ import {
   Users,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { fetchUsers } from '@/api/users'
 import SearchInput from '@/components/common/SearchInput.vue'
@@ -58,7 +58,15 @@ import type { UserItem } from '@/types/users'
 
 const queryClient = useQueryClient()
 const toast = useToast()
+const route = useRoute()
 const router = useRouter()
+
+// 检查是否有子路由匹配（路径是否比 /users 更深）
+const hasChildRoute = computed(() => {
+  const path = route.path
+  // /users 显示列表，/users/xxx/xxx 显示子路由
+  return path !== '/users' && path.startsWith('/users/')
+})
 
 const { data, isLoading, isRefetching, refetch } = useQuery({
   queryKey: ['users'],
@@ -212,7 +220,11 @@ function goToDetail(user: UserItem) {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <!-- 有子路由时只渲染子路由内容 -->
+  <RouterView v-if="hasChildRoute" />
+
+  <!-- 没有子路由时显示用户列表 -->
+  <div v-else class="space-y-6">
     <!-- 页面标题 -->
     <div class="flex items-center justify-between">
       <div>
@@ -490,8 +502,5 @@ function goToDetail(user: UserItem) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-
-    <!-- 三级嵌套路由出口（用户详情） -->
-    <RouterView />
   </div>
 </template>
