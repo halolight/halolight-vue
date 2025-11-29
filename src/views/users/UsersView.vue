@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
+  Eye,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -11,6 +12,7 @@ import {
   Users,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { fetchUsers } from '@/api/users'
 import SearchInput from '@/components/common/SearchInput.vue'
@@ -56,6 +58,7 @@ import type { UserItem } from '@/types/users'
 
 const queryClient = useQueryClient()
 const toast = useToast()
+const router = useRouter()
 
 const { data, isLoading, isRefetching, refetch } = useQuery({
   queryKey: ['users'],
@@ -202,6 +205,10 @@ function handleDeleteUser() {
   selectedUser.value = null
   toast.success('用户已删除')
 }
+
+function goToDetail(user: UserItem) {
+  router.push({ name: 'user-profile', params: { id: user.id } })
+}
 </script>
 
 <template>
@@ -329,6 +336,11 @@ function handleDeleteUser() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>操作</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem @click="goToDetail(user)">
+                        <Eye class="mr-2 h-4 w-4" />
+                        查看详情
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem @click="openEditDialog(user)">
                         <Pencil class="mr-2 h-4 w-4" />
@@ -478,5 +490,8 @@ function handleDeleteUser() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <!-- 三级嵌套路由出口（用户详情） -->
+    <RouterView />
   </div>
 </template>

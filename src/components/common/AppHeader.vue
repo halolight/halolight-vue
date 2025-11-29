@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useCommandMenuOptional } from '@/composables/useCommandMenu'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { useLayoutStore } from '@/stores/layout'
@@ -46,6 +47,7 @@ const auth = useAuthStore()
 const layout = useLayoutStore()
 const navigation = useNavigationStore()
 const uiSettings = useUiSettingsStore()
+const commandMenu = useCommandMenuOptional()
 
 const mobileHeaderFixed = computed(() => uiSettings.mobileHeaderFixed)
 
@@ -66,6 +68,9 @@ function handleMenuClick() {
 function handleSearchClick() {
   if (props.onSearchClick) {
     props.onSearchClick()
+  } else if (commandMenu) {
+    // 打开命令面板
+    commandMenu.openMenu()
   } else {
     emit('searchClick')
   }

@@ -36,7 +36,10 @@ describe('menu config', () => {
     const allNav = [...primaryNav, ...secondaryNav]
     allNav.forEach((item) => {
       expect(item.title).toBeTruthy()
-      expect(item.to.startsWith('/')).toBe(true)
+      // 父级菜单可能没有 to 属性
+      if (item.to) {
+        expect(item.to.startsWith('/')).toBe(true)
+      }
       expect(item.icon).toBeDefined()
     })
   })

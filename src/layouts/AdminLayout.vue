@@ -6,12 +6,17 @@ import AppFooter from '@/components/common/AppFooter.vue'
 import AppHeader from '@/components/common/AppHeader.vue'
 import AppSidebar from '@/components/common/AppSidebar.vue'
 import AppTabs from '@/components/common/AppTabs.vue'
+import CommandMenu from '@/components/common/CommandMenu.vue'
 import ToastContainer from '@/components/common/ToastContainer.vue'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { useProvideCommandMenu } from '@/composables/useCommandMenu'
 import { cn } from '@/lib/utils'
 import { useLayoutStore } from '@/stores/layout'
 import { useTabsStore } from '@/stores/tabs'
 import { useUiSettingsStore } from '@/stores/ui-settings'
+
+// 提供命令面板上下文给子组件
+useProvideCommandMenu()
 
 const layout = useLayoutStore()
 const uiSettings = useUiSettingsStore()
@@ -98,6 +103,8 @@ onMounted(() => {
     </Sheet>
   </div>
   <ToastContainer />
+  <!-- 全局命令面板 -->
+  <CommandMenu />
 </template>
 
 <style scoped>

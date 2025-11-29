@@ -13,7 +13,12 @@ export default [
     ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**', 'node_modules/**'],
   },
   ...pluginVue.configs['flat/essential'],
-  ...vueTsEslintConfig(),
+  ...vueTsEslintConfig({
+    supportedScriptLangs: {
+      ts: true,
+      tsx: true,
+    },
+  }),
   {
     plugins: {
       'unused-imports': unusedImports,

@@ -22,6 +22,9 @@ const ProfileView = () => import('@/views/dashboard/ProfileView.vue')
 const NotificationsView = () => import('@/views/dashboard/NotificationsView.vue')
 const TermsView = () => import('@/views/legal/TermsView.vue')
 const PrivacyView = () => import('@/views/legal/PrivacyView.vue')
+const UserDetailView = () => import('@/views/users/UserDetailView.vue')
+const UserDetailProfileView = () => import('@/views/users/UserDetailProfileView.vue')
+const UserDetailSecurityView = () => import('@/views/users/UserDetailSecurityView.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -102,6 +105,31 @@ const router = createRouter({
           name: 'users',
           component: UsersView,
           meta: { label: '用户管理' },
+          children: [
+            {
+              path: ':id',
+              component: UserDetailView,
+              meta: { label: '用户详情' },
+              children: [
+                {
+                  path: '',
+                  redirect: { name: 'user-profile' },
+                },
+                {
+                  path: 'profile',
+                  name: 'user-profile',
+                  component: UserDetailProfileView,
+                  meta: { label: '资料' },
+                },
+                {
+                  path: 'security',
+                  name: 'user-security',
+                  component: UserDetailSecurityView,
+                  meta: { label: '安全' },
+                },
+              ],
+            },
+          ],
         },
         {
           path: 'messages',
