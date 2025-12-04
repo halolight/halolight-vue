@@ -33,6 +33,7 @@
     "axios": "^1.7.9",
     "echarts": "^6.0.0",
     "grid-layout-plus": "^1.1.1",
+    "js-cookie": "^3.0.5",
     "lucide-vue-next": "^0.474.0",
     "mockjs": "^1.1.0",
     "pinia": "^2.2.6",

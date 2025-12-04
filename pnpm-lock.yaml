@@ -29,6 +29,9 @@ importers:
       grid-layout-plus:
         specifier: ^1.1.1
         version: 1.1.1(vue@3.5.25(typescript@5.9.3))
+      js-cookie:
+        specifier: ^3.0.5
+        version: 3.0.5
       lucide-vue-next:
         specifier: ^0.474.0
         version: 0.474.0(vue@3.5.25(typescript@5.9.3))
