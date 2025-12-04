@@ -85,6 +85,21 @@ async function handleLogout() {
   auth.logout()
   router.push('/login')
 }
+
+async function handleSwitchAccount(accountId: string) {
+  try {
+    await auth.switchAccount(accountId)
+    // 刷新当前页面或跳转到首页
+    router.push('/')
+  } catch (error) {
+    console.error('切换账号失败:', error)
+  }
+}
+
+// 获取可切换的账号列表（排除当前账号）
+const accountList = computed(() => {
+  return auth.accounts.filter((acc) => acc.id !== auth.activeAccountId)
+})
 </script>
 
 <template>
@@ -213,6 +228,38 @@ async function handleLogout() {
               </p>
             </div>
           </DropdownMenuLabel>
+
+          <!-- 账号切换 -->
+          <template v-if="accountList.length > 0">
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel class="text-xs text-muted-foreground">
+              快速切换账号
+            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                v-for="account in accountList"
+                :key="account.id"
+                class="cursor-pointer gap-2"
+                @click="handleSwitchAccount(account.id)"
+              >
+                <Avatar class="h-8 w-8">
+                  <AvatarImage :src="account.avatar" :alt="account.name" />
+                  <AvatarFallback>
+                    {{ account.name?.charAt(0) || 'A' }}
+                  </AvatarFallback>
+                </Avatar>
+                <div class="flex flex-col">
+                  <span class="text-sm font-medium leading-tight">
+                    {{ account.name }}
+                  </span>
+                  <span class="text-[11px] text-muted-foreground leading-tight">
+                    {{ account.role }} · {{ account.email }}
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </template>
+
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem

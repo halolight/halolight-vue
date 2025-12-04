@@ -19,6 +19,12 @@ onMounted(() => {
   <!-- TDK 管理器 -->
   <TdkManager />
 
-  <!-- 路由视图 -->
-  <RouterView />
+  <!-- 路由视图 with KeepAlive -->
+  <RouterView v-slot="{ Component, route }">
+    <Transition name="page" mode="out-in">
+      <KeepAlive :max="10">
+        <component :is="Component" :key="route.path" />
+      </KeepAlive>
+    </Transition>
+  </RouterView>
 </template>
