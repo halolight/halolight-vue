@@ -41,7 +41,7 @@ export function useScrollRestore() {
   const route = useRoute()
   const store = usePageCacheStore()
   const isRestoring = ref(false)
-  let timeoutId: NodeJS.Timeout | null = null
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
 
   const handleScroll = () => {
     if (!isRestoring.value) {

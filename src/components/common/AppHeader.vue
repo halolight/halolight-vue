@@ -243,7 +243,7 @@ const accountList = computed(() => {
                 @click="handleSwitchAccount(account.id)"
               >
                 <Avatar class="h-8 w-8">
-                  <AvatarImage :src="account.avatar" :alt="account.name" />
+                  <AvatarImage :src="account.avatar || ''" :alt="account.name" />
                   <AvatarFallback>
                     {{ account.name?.charAt(0) || 'A' }}
                   </AvatarFallback>

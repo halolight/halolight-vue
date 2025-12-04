@@ -1,24 +1,10 @@
+import Cookies from 'js-cookie'
 import { defineStore } from 'pinia'
 
-import { config } from '@/config'
+import { authApi } from '@/api/client'
+import type { AccountWithToken, LoginRequest, RegisterRequest, User } from '@/api/types'
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  avatar?: string
-}
-
-interface AccountWithToken extends User {
-  token: string
-}
-
-interface Credentials {
-  email: string
-  password: string
-  remember?: boolean
-}
+const IS_MOCK_MODE = import.meta.env.VITE_MOCK === 'true'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -30,7 +16,13 @@ export const useAuthStore = defineStore('auth', {
     error: '',
   }),
   getters: {
-    isAuthenticated: (state) => Boolean(state.token),
+    isAuthenticated: (state) => {
+      // 优先检查Cookie中的token（真实API模式）或state中的token（Mock模式）
+      if (IS_MOCK_MODE) {
+        return Boolean(state.token || Cookies.get('token'))
+      }
+      return Boolean(state.token || Cookies.get('accessToken'))
+    },
     initials: (state) => {
       if (!state.user) return 'HL'
       return state.user.name
@@ -42,59 +34,18 @@ export const useAuthStore = defineStore('auth', {
     },
   },
   actions: {
-    async login(payload: Credentials) {
+    async login(payload: LoginRequest) {
       this.loading = true
       this.error = ''
       try {
-        await new Promise((resolve) => setTimeout(resolve, 600))
-        // 模拟验证（从环境变量读取演示账号）
-        const demoEmail = config.demoEmail
-        const demoPassword = config.demoPassword
-        if (payload.email !== demoEmail || payload.password !== demoPassword) {
-          throw new Error('邮箱或密码错误')
-        }
+        const response = await authApi.login(payload)
 
-        // 生成账号ID和token
-        const accountId = `user-${Date.now()}`
-        const token = `mock-token-${accountId}`
+        this.user = response.user
+        this.token = response.token
+        this.accounts = response.accounts
+        this.activeAccountId = response.user.id
 
-        const user: User = {
-          id: accountId,
-          name: config.brandName + ' Admin',
-          email: payload.email,
-          role: 'Administrator',
-        }
-
-        const accountWithToken: AccountWithToken = {
-          ...user,
-          token,
-        }
-
-        // 模拟多账号数据：返回当前账号和其他可切换的账号
-        const mockAccounts: AccountWithToken[] = [
-          accountWithToken,
-          {
-            id: 'user-demo-1',
-            name: 'Demo User 1',
-            email: 'demo1@example.com',
-            role: 'Editor',
-            token: 'mock-token-demo-1',
-          },
-          {
-            id: 'user-demo-2',
-            name: 'Demo User 2',
-            email: 'demo2@example.com',
-            role: 'Viewer',
-            token: 'mock-token-demo-2',
-          },
-        ]
-
-        this.user = user
-        this.token = token
-        this.accounts = mockAccounts
-        this.activeAccountId = accountId
-
-        return user
+        return response.user
       } catch (e) {
         this.error = e instanceof Error ? e.message : '登录失败'
         throw e
@@ -102,6 +53,27 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
+
+    async register(payload: RegisterRequest) {
+      this.loading = true
+      this.error = ''
+      try {
+        const response = await authApi.register(payload)
+
+        this.user = response.user
+        this.token = response.token
+        this.accounts = response.accounts
+        this.activeAccountId = response.user.id
+
+        return response.user
+      } catch (e) {
+        this.error = e instanceof Error ? e.message : '注册失败'
+        throw e
+      } finally {
+        this.loading = false
+      }
+    },
+
     async switchAccount(accountId: string) {
       const account = this.accounts.find((item) => item.id === accountId)
       if (!account) {
@@ -109,33 +81,36 @@ export const useAuthStore = defineStore('auth', {
         throw new Error('账号不存在')
       }
 
-      this.user = {
-        id: account.id,
-        name: account.name,
-        email: account.email,
-        role: account.role,
-        avatar: account.avatar,
+      // 多账号切换仅在Mock模式下支持
+      if (!IS_MOCK_MODE) {
+        this.error = '多账号切换功能仅在Mock模式下可用'
+        throw new Error('多账号切换功能仅在Mock模式下可用')
       }
+
+      this.user = account
       this.token = account.token
       this.activeAccountId = account.id
       this.error = ''
+
+      // 更新Cookie
+      Cookies.set('token', account.token, { expires: 7 })
     },
+
     async loadAccounts() {
       this.loading = true
       try {
-        // 在真实应用中，这里会从服务器加载账号列表
-        // 现在我们只是使用已存储的账号列表
-        const { activeAccountId, token, user } = this
-        const nextUser =
-          this.accounts.find((acc) => acc.id === activeAccountId) ||
-          this.accounts.find((acc) => acc.token === token) ||
-          user ||
-          null
-
-        if (nextUser) {
-          this.user = nextUser
-          this.activeAccountId = nextUser.id
-          this.token = nextUser.token || token
+        const accounts = await authApi.getAccounts()
+        if (accounts.length > 0) {
+          this.accounts = accounts
+          // 如果没有当前激活账号，使用第一个
+          if (!this.activeAccountId && accounts.length > 0) {
+            const firstAccount = accounts[0]
+            if (firstAccount) {
+              this.user = firstAccount
+              this.token = firstAccount.token
+              this.activeAccountId = firstAccount.id
+            }
+          }
         }
       } catch (e) {
         this.error = e instanceof Error ? e.message : '加载账号失败'
@@ -143,19 +118,56 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-    logout() {
-      this.user = null
-      this.token = ''
-      this.accounts = []
-      this.activeAccountId = null
-      this.error = ''
+
+    async getCurrentUser() {
+      this.loading = true
+      try {
+        const response = await authApi.getCurrentUser()
+        if (response) {
+          this.user = response.user
+          this.accounts = response.accounts
+          this.activeAccountId = response.user.id
+
+          // 同步token：从Cookie读取最新的token
+          if (IS_MOCK_MODE) {
+            this.token = Cookies.get('token') || response.user.token
+          } else {
+            this.token = Cookies.get('accessToken') || ''
+          }
+
+          return response.user
+        }
+        return null
+      } catch (e) {
+        this.error = e instanceof Error ? e.message : '获取用户信息失败'
+        return null
+      } finally {
+        this.loading = false
+      }
     },
+
+    async logout() {
+      try {
+        await authApi.logout()
+      } catch (e) {
+        console.error('退出登录失败:', e)
+      } finally {
+        this.user = null
+        this.token = ''
+        this.accounts = []
+        this.activeAccountId = null
+        this.error = ''
+      }
+    },
+
     clearError() {
       this.error = ''
     },
   },
   persist: {
     key: 'halolight-auth',
-    pick: ['user', 'token', 'accounts', 'activeAccountId'],
+    // 不持久化token，避免与Cookie不同步
+    pick: ['user', 'accounts', 'activeAccountId'],
   },
 })
+

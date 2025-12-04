@@ -47,6 +47,7 @@
     "@dotenvx/dotenvx": "^1.51.1",
     "@tailwindcss/vite": "^4.1.17",
     "@testing-library/vue": "^8.1.0",
+    "@types/js-cookie": "^3.0.6",
     "@types/mockjs": "^1.0.10",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.1",

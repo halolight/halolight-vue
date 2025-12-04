@@ -102,11 +102,53 @@ export interface UserFilterParams extends PaginationParams {
   roleId?: string
 }
 
+/** 用户创建请求 */
+export type UserCreateRequest = Omit<User, 'id' | 'createdAt' | 'lastLoginAt' | 'role'> & {
+  roleId: string
+  password: string
+}
+
+/** 用户更新请求 */
+export type UserUpdateRequest = Partial<Omit<User, 'id' | 'createdAt' | 'lastLoginAt' | 'role'>> & {
+  roleId?: string
+}
+
+// ============================================================================
+// 认证相关
+// ============================================================================
+
+/** 账户（带Token） */
+export interface AccountWithToken extends User {
+  token: string
+}
+
+/** 登录请求 */
+export interface LoginRequest {
+  email: string
+  password: string
+  remember?: boolean
+}
+
+/** 注册请求 */
+export interface RegisterRequest {
+  name: string
+  email: string
+  password: string
+  confirmPassword: string
+}
+
 /** 登录响应 */
 export interface LoginResponse {
-  user: User
+  user: AccountWithToken
   token: string
   expiresIn: number
+  accounts: AccountWithToken[]
+}
+
+/** 当前用户响应 */
+export interface CurrentUserResponse {
+  user: AccountWithToken
+  accounts: AccountWithToken[]
 }
 
 // ============================================================================
