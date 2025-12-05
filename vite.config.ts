@@ -155,6 +155,15 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     strictPort: false,
     host: true,
+    // API 代理配置 - 解决跨域问题
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_BACKEND_URL || 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+        // rewrite: (path) => path.replace(/^\/api/, '/api'),
+      },
+    },
   },
 
   // 预览服务器配置
